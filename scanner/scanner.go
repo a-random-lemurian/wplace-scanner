@@ -95,9 +95,7 @@ func (w *WplaceScanner) Run() error {
 	return nil
 }
 
-func (w *WplaceScanner) download() {
-	zoom := w.settings.ZoomLevel
-
+func (w *WplaceScanner) getTileBoundingBoxes() (int, int, int, int) {
 	northwestTile := tiles.FromCoordinate(
 		w.settings.BBox.LatMin,
 		w.settings.BBox.LonMin,
@@ -112,6 +110,12 @@ func (w *WplaceScanner) download() {
 	minY := min(northwestTile.Y, southeastTile.Y)
 	maxY := max(northwestTile.Y, southeastTile.Y)
 
+	return minX, maxX, minY, maxY
+}
+
+func (w *WplaceScanner) download() {
+	zoom := w.settings.ZoomLevel
+	minX, maxX, minY, maxY := w.getTileBoundingBoxes()
 	tileCount := (maxX - minX) * (maxY - minY)
 	w.log.Info().Int("tileCount", tileCount).Msg("Scheduling batch of tile downloads")
 
