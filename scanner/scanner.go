@@ -1,6 +1,7 @@
 package scanner
 
 import (
+	"encoding/json"
 	"fmt"
 	"image"
 	"image/png"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/buckhx/tiles"
+	"github.com/carlmjohnson/versioninfo"
 	"github.com/rs/zerolog"
 )
 
@@ -26,6 +28,7 @@ type WplaceScannerSettings struct {
 	OutputDirectory       string
 	UserAgent             string
 	MaxConcurrentRequests int64
+	GenerateStitches      bool
 	Frequency             time.Duration
 	BBox                  BoundingBox
 	HttpClient            *http.Client
@@ -117,12 +120,14 @@ func (w *WplaceScanner) download() {
 	zoom := w.settings.ZoomLevel
 	minX, maxX, minY, maxY := w.getTileBoundingBoxes()
 	tileCount := (maxX - minX) * (maxY - minY)
+
 	w.log.Info().Int("tileCount", tileCount).Msg("Scheduling batch of tile downloads")
 
-	
 	batchTime := time.Now().UTC()
 	batchTimeString := batchTime.Format("2006-01-02T15-04-05Z")
 	directory := fmt.Sprintf("%s/%s", w.settings.OutputDirectory, batchTimeString)
+
+	tileMap := NewTileMap()
 
 	manifest := &Manifest{
 		Generator: GeneratorInfo{
@@ -138,7 +143,9 @@ func (w *WplaceScanner) download() {
 		for y := minY; y <= maxY; y++ {
 			w.log.Debug().Int("x", x).Int("y", y).Msg("Scheduling tile download")
 			tile := &tiles.Tile{X: x, Y: y, Z: zoom}
+
 			receivedTile := w.getTile(tile)
+
 			tileMap.Add(receivedTile)
 			w.writeTile(receivedTile, directory)
 
