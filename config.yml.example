@@ -1,0 +1,9 @@
+tile_server: https://backend.wplace.live/files/s0/tiles/1168/1228.png
+zoom_level: 11
+output: tiles
+user_agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:142.0) Gecko/20100101 Firefox/142.0
+frequency: 60m
+
+# example bbox for Port Elizabeth, South Africa
+# (lat_min, lon_min, lat_max, lon_max)
+bbox: [-34.095885, 25.208130, -33.654638, 25.870056]
