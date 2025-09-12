@@ -5,5 +5,5 @@ build
 out
 output
 debug
-./wplace-scanner
+wplace-scanner
 *.exe
