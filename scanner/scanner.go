@@ -121,7 +121,7 @@ func (w *WplaceScanner) download() {
 
 	
 	batchTime := time.Now().UTC()
-	batchTimeString := batchTime.Format("2006-01-02 15-04-05Z")
+	batchTimeString := batchTime.Format("2006-01-02T15-04-05Z")
 	directory := fmt.Sprintf("%s/%s", w.settings.OutputDirectory, batchTimeString)
 
 	tileMap := &TileMap{}
