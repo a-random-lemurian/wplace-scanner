@@ -142,9 +142,9 @@ func (w *WplaceScanner) emptyTile() *WplaceTile {
 
 func (w *WplaceScanner) writeTile(receivedTile *WplaceTile, directory string) {
 	subdirectory := fmt.Sprintf("%s/%d", directory, receivedTile.Coords.X)
-	err := os.MkdirAll(directory, 0755)
+	err := os.MkdirAll(subdirectory, 0755)
 	if err != nil {
-		w.log.Error().Err(err).Str("dir", directory).Msg("Failed to create directory for tiles")
+		w.log.Error().Err(err).Str("dir", subdirectory).Msg("Failed to create directory for tiles")
 		return
 	}
 
