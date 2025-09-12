@@ -124,7 +124,15 @@ func (w *WplaceScanner) download() {
 	batchTimeString := batchTime.Format("2006-01-02T15-04-05Z")
 	directory := fmt.Sprintf("%s/%s", w.settings.OutputDirectory, batchTimeString)
 
-	tileMap := &TileMap{}
+	manifest := &Manifest{
+		Generator: GeneratorInfo{
+			Version:     versioninfo.Short(),
+			ProgramName: "wplace-scanner",
+		},
+		Timestamp: batchTime,
+		TileCount: tileCount,
+		Tiles:     []TileInfo{},
+	}
 
 	for x := minX; x <= maxX; x++ {
 		for y := minY; y <= maxY; y++ {
@@ -133,8 +141,53 @@ func (w *WplaceScanner) download() {
 			receivedTile := w.getTile(tile)
 			tileMap.Add(receivedTile)
 			w.writeTile(receivedTile, directory)
+
+			manifest.Tiles = append(manifest.Tiles, TileInfo{
+				Url:      w.fetcher.MakeTileUrl(tile),
+				Filename: fmt.Sprintf("%d/%d.png", x, y),
+			})
 		}
 	}
+
+	err := w.writeManifest(manifest, directory)
+	if err != nil {
+		w.log.Error().Err(err).Msg("Failed to write manifest file")
+	}
+
+	// if w.settings.GenerateStitches {
+	// 	tileMap.StitchTiles()
+	// }
+}
+
+type GeneratorInfo struct {
+	Version     string `json:"version"`
+	ProgramName string `json:"program"`
+}
+
+type Manifest struct {
+	Generator GeneratorInfo `json:"generator"`
+	Timestamp time.Time     `json:"timestamp"`
+	TileCount int           `json:"tileCount"`
+	Tiles     []TileInfo    `json:"tiles"`
+}
+
+type TileInfo struct {
+	Url      string `json:"url"`
+	Filename string `json:"filename"`
+}
+
+func (w *WplaceScanner) writeManifest(manifest *Manifest, directory string) error {
+	manifestFilename := fmt.Sprintf("%s/manifest.json", directory)
+	file, err := os.Create(manifestFilename)
+	if err != nil {
+		return err
+	}
+	jsonOut, err := json.MarshalIndent(manifest, "", "\t")
+	if err != nil {
+		return err
+	}
+	_, err = file.Write(jsonOut)
+	return err
 }
 
 func (w *WplaceScanner) emptyTile() *WplaceTile {
