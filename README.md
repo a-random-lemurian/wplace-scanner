@@ -10,6 +10,7 @@ Copy `config.yml.example` to `config.yml`. The defaults are sane.
 - `user_agent` - The user agent to use when making requests for the tiles.
 - `frequency` - How often to download the tiles.
 - `bbox` - The coverage area for the scanner. Attempting to scan the entire canvas is a *bad* idea.
+- `stitch_tiles` - Whether to generate a stitched version of all downloaded tiles. Be wary of memory use when scanning large areas!
 
 To calculate a bounding box, use the tool at [http://bboxfinder.com/](http://bboxfinder.com/). In the bottom-right of the website, select Lat / Lng as the coordinate format. Select the square drawing tool and copy the coordinates labeled "Box". Then, put them in-between the square brackets in the configuration file. It is also recommended to add the name of your project of sorts after `tiles/` to keep things organized, for example, `port-elizabeth` or `extremely-huge-art-timelapse`.
 

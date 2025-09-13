@@ -93,6 +93,7 @@ func runStart(cmd *cobra.Command, args []string) error {
 	settings.UserAgent = v.GetString("user_agent")
 	settings.MaxConcurrentRequests = v.GetInt64("max_concurrency")
 	settings.ZoomLevel = v.GetInt("zoom_level")
+	settings.GenerateStitches = v.GetBool("stitch_tiles")
 
 	scanner := scanner.NewWplaceScanner(settings)
 	

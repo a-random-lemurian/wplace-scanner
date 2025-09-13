@@ -185,9 +185,35 @@ func (w *WplaceScanner) download() {
 		w.log.Error().Err(err).Msg("Failed to write manifest file")
 	}
 
-	// if w.settings.GenerateStitches {
-	// 	tileMap.StitchTiles()
-	// }
+	if !w.settings.GenerateStitches {
+		return
+	}
+
+	w.writeStitchedTiles(tileMap, tileBbox, directory)
+}
+
+func (w *WplaceScanner) writeStitchedTiles(tileMap *TileMap, tileBbox *TileBoundingBox, directory string) error {
+	w.log.Info().Msg("Generating stitched tiles")
+
+	stitchedImageFile := fmt.Sprintf("%s/stitched.png", directory)
+	file, err := os.Create(stitchedImageFile)
+	if err != nil {
+		w.log.Error().Err(err).Msg("Failed to create file")
+		return err
+	}
+	defer file.Close()
+
+	img, err := tileMap.StitchTiles(tileBbox)
+	if err != nil {
+		w.log.Error().Err(err).Msg("Failed to stitch tiles")
+		return err
+	}
+
+	err = png.Encode(file, img)
+	if err != nil {
+		w.log.Error().Err(err).Msg("Failed to PNG encode to final file")
+	}
+	return err
 }
 
 type GeneratorInfo struct {
