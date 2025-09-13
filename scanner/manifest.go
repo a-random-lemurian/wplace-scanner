@@ -27,19 +27,32 @@ type TileInfo struct {
 	LastModified time.Time `json:"lastModified"`
 	RequestTime  time.Time `json:"requestTime"`
 	ReceivedTime time.Time `json:"receivedTime"`
+	HttpResponseCode int   `json:"httpResponseCode"`
 }
 
 func (m *Manifest) AddTile(tile *WplaceTile) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
+	urlString := ""
+	if tile.URL != nil {
+		urlString = tile.URL.String()
+	}
+
 	tileinfo := TileInfo{
-		Url:      tile.Resp.Request.URL.String(),
+		Url:      urlString,
 		Filename: fmt.Sprintf("%d/%d.png", tile.Coords.X, tile.Coords.Y),
 	}
 
 	var lastModifiedTime time.Time = time.UnixMicro(0)
-	lm := tile.Resp.Header.Get("last-modified")
+
+	lm := ""
+
+	if tile.Resp != nil {
+		tile.Resp.Header.Get("last-modified")
+		tileinfo.HttpResponseCode = tile.Resp.StatusCode
+	}
+
 	if lm != "" {
 		t, err := http.ParseTime(lm)
 		if err == nil {
@@ -50,6 +63,7 @@ func (m *Manifest) AddTile(tile *WplaceTile) {
 
 	tileinfo.RequestTime = tile.RequestTime
 	tileinfo.ReceivedTime = tile.ReceivedTime
+
 
 	m.Tiles = append(m.Tiles, tileinfo)
 }

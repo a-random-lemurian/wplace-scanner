@@ -36,12 +36,13 @@ type TileFetcherSettings struct {
 }
 
 type WplaceTile struct {
-	Resp   *http.Response
-	Coords *tiles.Tile
-	Image  image.Image
-	RequestTime time.Time
+	Resp         *http.Response
+	Coords       *tiles.Tile
+	Image        image.Image
+	RequestTime  time.Time
 	ReceivedTime time.Time
-	err    error
+	URL          *url.URL
+	err          error
 }
 
 func NewTileFetcher(settings *TileFetcherSettings) *TileFetcher {
@@ -81,11 +82,7 @@ func (t *TileFetcher) FetchTile(tile *tiles.Tile) (*WplaceTile, error) {
 
 	receivedTile := <-ch
 
-	if receivedTile.err != nil {
-		return nil, receivedTile.err
-	}
-
-	return receivedTile, nil
+	return receivedTile, receivedTile.err
 }
 
 func (t *TileFetcher) tileRequestWorker() {
@@ -103,12 +100,14 @@ func (t *TileFetcher) tileRequestWorker() {
 
 		go func(tile *tiles.Tile) {
 			defer sem.Release(1)
+			log := t.log.With().Str("url", t.MakeTileUrl(tile)).Logger()
+
 			requestSentTime := time.Now().UTC()
 			receivedTile, err := t.doTileRequest(tile)
 			receivedTime := time.Now().UTC()
 			if err != nil {
-				t.log.Err(err).Msg("Failed to download tile")
-				receivedTile = &WplaceTile{err: err}
+				log.Err(err).Msg("Failed to download tile")
+				receivedTile.err = err
 			}
 			receivedTile.RequestTime = requestSentTime
 			receivedTile.ReceivedTime = receivedTime
@@ -116,7 +115,7 @@ func (t *TileFetcher) tileRequestWorker() {
 			t.tileRepliesMu.Lock()
 			ch, ok := t.tileReplies[makeTileKey(tile)]
 			if !ok {
-				t.log.Warn().Msg("Failed to find reply channel for requested tile!")
+				log.Warn().Msg("Failed to find reply channel for requested tile!")
 			}
 			ch <- receivedTile
 			t.tileRepliesMu.Unlock()
@@ -131,13 +130,14 @@ func (t *TileFetcher) doTileRequest(tile *tiles.Tile) (*WplaceTile, error) {
 	req.Header.Add("user-agent", t.settings.UserAgent)
 	req.Method = http.MethodGet
 
-	parsed, err := url.Parse(t.MakeTileUrl(tile))
+	urlString := t.MakeTileUrl(tile)
+	parsed, err := url.Parse(urlString)
 	if err != nil {
 		return nil, err
 	}
 	req.URL = parsed
 
-	t.log.Debug().Stringer("url", req.URL).Msg("Fetching tile URL")
+	t.log.Info().Stringer("url", req.URL).Msg("Fetching tile URL")
 
 	resp, err := client.Do(&req)
 	if err != nil {
@@ -145,19 +145,20 @@ func (t *TileFetcher) doTileRequest(tile *tiles.Tile) (*WplaceTile, error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to fetch tile: %s", resp.Status)
-	}
-
 	receivedTile := &WplaceTile{}
+	receivedTile.URL = parsed
 	receivedTile.Coords = tile
+	receivedTile.Resp = resp
+
+	if resp.StatusCode != http.StatusOK {
+		return receivedTile, fmt.Errorf("failed to fetch tile: %s", resp.Status)
+	}
 
 	img, err := png.Decode(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode image as png: %s", err)
 	}
 	receivedTile.Image = img
-	receivedTile.Resp = resp
 
 	t.log.Trace().Interface("respHeader", resp.Header).Msg("Fetched tile")
 

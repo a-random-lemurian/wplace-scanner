@@ -251,10 +251,11 @@ func (w *WplaceScanner) writeTile(receivedTile *WplaceTile, directory string) {
 }
 
 func (w *WplaceScanner) getTile(tile *tiles.Tile) *WplaceTile {
+	var receivedTile *WplaceTile
 	receivedTile, err := w.fetcher.FetchTile(tile)
 	if err != nil {
-		w.log.Error().Err(err).Msg("Using empty tile in place of 404 not found tile")
-		receivedTile = w.emptyTile()
+		w.log.Warn().Msg("Using empty tile in place of 404 not found tile")
+		receivedTile.Image = image.NewRGBA(image.Rect(0, 0, 1000, 1000))
 		receivedTile.Coords = tile
 	}
 	return receivedTile
