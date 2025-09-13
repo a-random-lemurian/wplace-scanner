@@ -153,7 +153,6 @@ func (w *WplaceScanner) download() {
 	}
 
 	wg := &sync.WaitGroup{}
-	manifestMu := &sync.Mutex{}
 
 	for x := tileBbox.minX; x <= tileBbox.maxX; x++ {
 		for y := tileBbox.minY; y <= tileBbox.maxY; y++ {
@@ -168,12 +167,7 @@ func (w *WplaceScanner) download() {
 				tileMap.Add(receivedTile)
 				w.writeTile(receivedTile, directory)
 
-				manifestMu.Lock()
-				manifest.Tiles = append(manifest.Tiles, TileInfo{
-					Url:      w.fetcher.MakeTileUrl(tile),
-					Filename: fmt.Sprintf("%d/%d.png", x, y),
-				})
-				manifestMu.Unlock()
+				manifest.AddTile(receivedTile)
 			}(x, y)
 		}
 	}
@@ -214,23 +208,6 @@ func (w *WplaceScanner) writeStitchedTiles(tileMap *TileMap, tileBbox *TileBound
 		w.log.Error().Err(err).Msg("Failed to PNG encode to final file")
 	}
 	return err
-}
-
-type GeneratorInfo struct {
-	Version     string `json:"version"`
-	ProgramName string `json:"program"`
-}
-
-type Manifest struct {
-	Generator GeneratorInfo `json:"generator"`
-	Timestamp time.Time     `json:"timestamp"`
-	TileCount int           `json:"tileCount"`
-	Tiles     []TileInfo    `json:"tiles"`
-}
-
-type TileInfo struct {
-	Url      string `json:"url"`
-	Filename string `json:"filename"`
 }
 
 func (w *WplaceScanner) writeManifest(manifest *Manifest, directory string) error {
