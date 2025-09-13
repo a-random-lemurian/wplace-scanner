@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"time"
 
 	"golang.org/x/sync/semaphore"
 
@@ -38,6 +39,8 @@ type WplaceTile struct {
 	Resp   *http.Response
 	Coords *tiles.Tile
 	Image  image.Image
+	RequestTime time.Time
+	ReceivedTime time.Time
 	err    error
 }
 
@@ -100,11 +103,15 @@ func (t *TileFetcher) tileRequestWorker() {
 
 		go func(tile *tiles.Tile) {
 			defer sem.Release(1)
+			requestSentTime := time.Now().UTC()
 			receivedTile, err := t.doTileRequest(tile)
+			receivedTime := time.Now().UTC()
 			if err != nil {
 				t.log.Err(err).Msg("Failed to download tile")
 				receivedTile = &WplaceTile{err: err}
 			}
+			receivedTile.RequestTime = requestSentTime
+			receivedTile.ReceivedTime = receivedTime
 
 			t.tileRepliesMu.Lock()
 			ch, ok := t.tileReplies[makeTileKey(tile)]
