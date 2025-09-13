@@ -23,6 +23,13 @@ type BoundingBox struct {
 	LonMax float64
 }
 
+type TileBoundingBox struct {
+	minX int
+	minY int
+	maxX int
+	maxY int
+}
+
 type WplaceScannerSettings struct {
 	TileServerUrl         string
 	ZoomLevel             int
@@ -99,7 +106,7 @@ func (w *WplaceScanner) Run() error {
 	return nil
 }
 
-func (w *WplaceScanner) getTileBoundingBoxes() (int, int, int, int) {
+func (w *WplaceScanner) getTileBoundingBoxes() (*TileBoundingBox) {
 	northwestTile := tiles.FromCoordinate(
 		w.settings.BBox.LatMin,
 		w.settings.BBox.LonMin,
@@ -114,13 +121,18 @@ func (w *WplaceScanner) getTileBoundingBoxes() (int, int, int, int) {
 	minY := min(northwestTile.Y, southeastTile.Y)
 	maxY := max(northwestTile.Y, southeastTile.Y)
 
-	return minX, maxX, minY, maxY
+	return &TileBoundingBox{
+		minX: minX,
+		minY: minY,
+		maxX: maxX,
+		maxY: maxY,
+	}
 }
 
 func (w *WplaceScanner) download() {
 	zoom := w.settings.ZoomLevel
-	minX, maxX, minY, maxY := w.getTileBoundingBoxes()
-	tileCount := (maxX - minX) * (maxY - minY)
+	tileBbox := w.getTileBoundingBoxes()
+	tileCount := (tileBbox.maxX - tileBbox.minX) * (tileBbox.maxY - tileBbox.minY)
 
 	w.log.Info().Int("tileCount", tileCount).Msg("Scheduling batch of tile downloads")
 
@@ -143,8 +155,8 @@ func (w *WplaceScanner) download() {
 	wg := &sync.WaitGroup{}
 	manifestMu := &sync.Mutex{}
 
-	for x := minX; x <= maxX; x++ {
-		for y := minY; y <= maxY; y++ {
+	for x := tileBbox.minX; x <= tileBbox.maxX; x++ {
+		for y := tileBbox.minY; y <= tileBbox.maxY; y++ {
 			wg.Add(1)
 			go func(x int, y int) {
 				defer wg.Done()
