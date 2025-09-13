@@ -90,7 +90,7 @@ func (w *WplaceScanner) Run() error {
 
 	if err := w.checkOutputDirectory(); err != nil {
 		return err
-	} 
+	}
 
 	ticker := time.NewTicker(w.settings.Frequency)
 
@@ -106,7 +106,7 @@ func (w *WplaceScanner) Run() error {
 	return nil
 }
 
-func (w *WplaceScanner) getTileBoundingBoxes() (*TileBoundingBox) {
+func (w *WplaceScanner) getTileBoundingBoxes() *TileBoundingBox {
 	northwestTile := tiles.FromCoordinate(
 		w.settings.BBox.LatMin,
 		w.settings.BBox.LonMin,
@@ -248,7 +248,7 @@ func (w *WplaceScanner) writeManifest(manifest *Manifest, directory string) erro
 }
 
 func (w *WplaceScanner) emptyTile() *WplaceTile {
-	empty1000 := image.NewRGBA(image.Rect(0,0,1000,1000))
+	empty1000 := image.NewRGBA(image.Rect(0, 0, 1000, 1000))
 	return &WplaceTile{
 		Image: empty1000,
 	}

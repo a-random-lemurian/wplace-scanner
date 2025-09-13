@@ -48,7 +48,7 @@ func runStart(cmd *cobra.Command, args []string) error {
 	}
 
 	consoleWriter := zerolog.ConsoleWriter{
-		Out: os.Stderr,
+		Out:        os.Stderr,
 		TimeFormat: "2006-01-02 15:04:05.000000",
 	}
 
@@ -96,6 +96,6 @@ func runStart(cmd *cobra.Command, args []string) error {
 	settings.GenerateStitches = v.GetBool("stitch_tiles")
 
 	scanner := scanner.NewWplaceScanner(settings)
-	
+
 	return scanner.Run()
 }
