@@ -7,6 +7,7 @@ import (
 	"image/png"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/buckhx/tiles"
@@ -139,22 +140,33 @@ func (w *WplaceScanner) download() {
 		Tiles:     []TileInfo{},
 	}
 
+	wg := &sync.WaitGroup{}
+	manifestMu := &sync.Mutex{}
+
 	for x := minX; x <= maxX; x++ {
 		for y := minY; y <= maxY; y++ {
-			w.log.Debug().Int("x", x).Int("y", y).Msg("Scheduling tile download")
-			tile := &tiles.Tile{X: x, Y: y, Z: zoom}
+			wg.Add(1)
+			go func(x int, y int) {
+				defer wg.Done()
+				w.log.Debug().Int("x", x).Int("y", y).Msg("Scheduling tile download")
+				tile := &tiles.Tile{X: x, Y: y, Z: zoom}
 
-			receivedTile := w.getTile(tile)
+				receivedTile := w.getTile(tile)
 
-			tileMap.Add(receivedTile)
-			w.writeTile(receivedTile, directory)
+				tileMap.Add(receivedTile)
+				w.writeTile(receivedTile, directory)
 
-			manifest.Tiles = append(manifest.Tiles, TileInfo{
-				Url:      w.fetcher.MakeTileUrl(tile),
-				Filename: fmt.Sprintf("%d/%d.png", x, y),
-			})
+				manifestMu.Lock()
+				manifest.Tiles = append(manifest.Tiles, TileInfo{
+					Url:      w.fetcher.MakeTileUrl(tile),
+					Filename: fmt.Sprintf("%d/%d.png", x, y),
+				})
+				manifestMu.Unlock()
+			}(x, y)
 		}
 	}
+
+	wg.Wait()
 
 	err := w.writeManifest(manifest, directory)
 	if err != nil {
