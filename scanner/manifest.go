@@ -49,7 +49,7 @@ func (m *Manifest) AddTile(tile *WplaceTile) {
 	lm := ""
 
 	if tile.Resp != nil {
-		tile.Resp.Header.Get("last-modified")
+		lm = tile.Resp.Header.Get("last-modified")
 		tileinfo.HttpResponseCode = tile.Resp.StatusCode
 	}
 
