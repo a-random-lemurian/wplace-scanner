@@ -195,6 +195,7 @@ func (w *WplaceScanner) writeStitchedTiles(tileMap *TileMap, tileBbox *TileBound
 		w.log.Error().Err(err).Msg("Failed to create file")
 		return err
 	}
+	w.log.Trace().Str("filename", stitchedImageFile).Msg("Created file")
 	defer file.Close()
 
 	img, err := tileMap.StitchTiles(tileBbox)
@@ -207,6 +208,7 @@ func (w *WplaceScanner) writeStitchedTiles(tileMap *TileMap, tileBbox *TileBound
 	if err != nil {
 		w.log.Error().Err(err).Msg("Failed to PNG encode to final file")
 	}
+	w.log.Trace().Msg("Wrote stitched tiles to file")
 	return err
 }
 

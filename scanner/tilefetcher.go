@@ -91,6 +91,7 @@ func (t *TileFetcher) tileRequestWorker() {
 		sem        = semaphore.NewWeighted(int64(maxWorkers))
 		ctx        = context.TODO()
 	)
+	t.log.Trace().Msg("Initiated tileRequestWorker")
 
 	for tile := range t.tileRequestChannel {
 		if err := sem.Acquire(ctx, 1); err != nil {
@@ -160,7 +161,13 @@ func (t *TileFetcher) doTileRequest(tile *tiles.Tile) (*WplaceTile, error) {
 	}
 	receivedTile.Image = img
 
-	t.log.Trace().Interface("respHeader", resp.Header).Msg("Fetched tile")
+	t.log.Info().Msg("Fetched tile")
+	t.log.Trace().
+		Interface("respHeader", resp.Header).
+		Int("statusCode", resp.StatusCode).
+		Str("status", resp.Status).
+		Str("httpVersion", resp.Proto).
+		Msg("Response information for fetched tile")
 
 	return receivedTile, err
 }
