@@ -24,6 +24,9 @@ func init() {
 	crF := cmdRoot.PersistentFlags()
 	crF.StringP("config", "c", "config.yml", "Path to configuration file")
 	crF.Bool("debug", false, "Print additional debugging and trace information")
+
+	csF := cmdStart.PersistentFlags()
+	csF.Bool("stitch-tiles", true, "Stitch scraped tiles into one coherent image")
 }
 
 func main() {
@@ -66,6 +69,8 @@ func runStart(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+
+	v.BindPFlag("stitch_tiles", cmd.Flag("stitch-tiles"))
 
 	log.Info().Msg("Loaded configuration file.")
 
